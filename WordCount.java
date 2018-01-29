@@ -12,6 +12,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import java.util.HashMap;
 import java.util.Map;
+import java.lang.*;
 
 public class WordCount {
 
@@ -321,13 +322,52 @@ public class WordCount {
         public void reduce(Text key, Iterable<Text> values,
                            Context context
                            ) throws IOException, InterruptedException {
-          String ditributionsFunctions = "";
+
+            // FIRST WE HAVE TO CALCULATE DENSITY
+            double density = 0;
+            double velocityX = 0;
+            double velocityY = 0;
+            double c = 1/Math.sqrt(3);
+            /*double[] c0 = {0,0};
+            double[] c1 = {+c,0};
+            double[] c2 = {+c,+c};
+            double[] c3 = {0,+c};
+            double[] c4 = {-c,+c};
+            double[] c5 = {-c, 0};
+            double[] c6 = {-c,-c};
+            double[] c7 = {0,-c};
+            double[] c8 = {c,-c};*/
+            double[] ciX = {0,0,+c,+c,+c,0,-c,-c,-c};
+            double[] ciY = {0,+c,+c,0,-c,-c,-c,0,+c};
+            for (Text val : values) {
+                StringTokenizer itr = new StringTokenizer(val.toString());
+                String[] directionFi = itr.nextToken().split(":");
+                String direction = directionFi[0];
+                double fi = Double.parseDouble(val.toString().replace(direction+":",""));
+                density += fi;
+                double aux = (ciX[Integer.parseInt(val.toString().toCharArray()[0] + "")]);
+                velocityX += aux*fi;
+                velocityY += (ciY[Integer.parseInt(val.toString().toCharArray()[0] + "")]); 
+            }
+
+            Text ditributionsFunctionsText = new Text(Double.toString(velocityX));
+            context.write(key, ditributionsFunctionsText);
+
+
+            // AFTER WE HAVE TO CALCULATE VELOCITIES 'X' AND 'Y'
+
+            // AFTER FMI
+
+            // AFTER FIRST
+
+
+          /*String ditributionsFunctions = "";
           for (Text val : values) {
             //sum = val.get();
             ditributionsFunctions += " " + val.toString();
           }
           Text ditributionsFunctionsText = new Text(ditributionsFunctions);
-          context.write(key, ditributionsFunctionsText);
+          context.write(key, ditributionsFunctionsText);*/
         }
     }
 
@@ -341,7 +381,7 @@ public class WordCount {
 
         Configuration conf = new Configuration();
         boolean status = false;
-        for (int i = 0; i<100; i++) {
+        //for (int i = 0; i < 1; i++) {
             Job job = Job.getInstance(conf, "word count");
             job.setJarByClass(WordCount.class);
             job.setMapperClass(TokenizerMapper.class);
@@ -349,12 +389,14 @@ public class WordCount {
             job.setReducerClass(IntSumReducer.class);
             job.setOutputKeyClass(Text.class);
             job.setOutputValueClass(Text.class);
-            String fileIn = args[0] + Integer.toString(i);
-            String fileOut = args[0] + Integer.toString(i+1);
-            FileInputFormat.addInputPath(job, new Path(fileIn));
-            FileOutputFormat.setOutputPath(job, new Path(fileOut));
+            //String fileIn = args[0] + Integer.toString(i);
+            //String fileOut = args[0] + Integer.toString(i+1);
+            //FileInputFormat.addInputPath(job, new Path(fileIn));
+            FileInputFormat.addInputPath(job, new Path(args[0]));
+            //FileOutputFormat.setOutputPath(job, new Path(fileOut));
+            FileOutputFormat.setOutputPath(job, new Path(args[1]));
             status = job.waitForCompletion(true);     
-        }
+        //}
         
         System.exit(status ? 0 : 1);
     }
